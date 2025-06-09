@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detroit Pakistani Community - Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 50px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        input[type="email"], input[type="password"], input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            background: #5a67d8;
+        }
+        
+        .btn-secondary {
+            background: #764ba2;
+        }
+        
+        .btn-secondary:hover {
+            background: #6b4096;
+        }
+        
+        .toggle-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .toggle-link a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .toggle-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .user-info {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background: #e6fffa;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .success-message {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 Detroit Pak Connect</h1>
+            <p>Connect with local businesses and community</p>
+        </div>
+        
+        <!-- Error and Success Messages -->
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+        
+        <!-- Login Form -->
+        <div id="loginForm">
+            <form id="loginFormElement">
+                <div class="form-group">
+                    <label for="loginEmail">Email:</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password:</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn">Sign In</button>
+            </form>
+            <div class="toggle-link">
+                <p>Don't have an account? <a href="#" id="showSignup">Sign up here</a></p>
+            </div>
+        </div>
+        
+        <!-- Signup Form -->
+        <div id="signupForm" style="display: none;">
+            <form id="signupFormElement">
+                <div class="form-group">
+                    <label for="signupName">Full Name:</label>
+                    <input type="text" id="signupName" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupEmail">Email:</label>
+                    <input type="email" id="signupEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupPassword">Password:</label>
+                    <input type="password" id="signupPassword" required>
+                </div>
+                <button type="submit" class="btn btn-secondary">Create Account</button>
+            </form>
+            <div class="toggle-link">
+                <p>Already have an account? <a href="#" id="showLogin">Sign in here</a></p>
+            </div>
+        </div>
+        
+        <!-- User Dashboard (shown after login) -->
+        <div id="userDashboard" class="user-info">
+            <h3>Welcome!</h3>
+            <p id="userEmail"></p>
+            <button id="logoutBtn" class="btn">Logout</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK v9+ (Modern) -->
+    <script type="module">
+        // Import Firebase functions
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
+        import { getFirestore, collection, doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+
+        // 🔥 FIREBASE CONFIGURATION
+        // REPLACE THE VALUES BELOW WITH YOUR ACTUAL FIREBASE CONFIG VALUES
+        const firebaseConfig = {
+           apiKey: "AIzaSyAVQQg6vmkPjXQ4fDUCwk-1aWLJKmVXAn0",
+           authDomain: "detroit-pak-community.firebaseapp.com",
+           projectId: "detroit-pak-community",
+           storageBucket: "detroit-pak-community.firebasestorage.app",
+           messagingSenderId: "847293684283",
+           appId: "1:847293684283:web:4f230511a20ba6b5351a1e",
+           measurementId: "G-3FLBTCZNKT"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // 📝 GET FORM ELEMENTS
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const userDashboard = document.getElementById('userDashboard');
+        const loginFormElement = document.getElementById('loginFormElement');
+        const signupFormElement = document.getElementById('signupFormElement');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+
+        // 🔄 TOGGLE BETWEEN LOGIN AND SIGNUP
+        document.getElementById('showSignup').addEventListener('click', (e) => {
+            e.preventDefault();
+            loginForm.style.display = 'none';
+            signupForm.style.display = 'block';
+            clearMessages();
+        });
+
+        document.getElementById('showLogin').addEventListener('click', (e) => {
+            e.preventDefault();
+            signupForm.style.display = 'none';
+            loginForm.style.display = 'block';
+            clearMessages();
+        });
+
+        // 📧 SIGN UP NEW USER
+        signupFormElement.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+
+            try {
+                // Create user account
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Save additional user info to Firestore database
+                await setDoc(doc(db, 'users', user.uid), {
+                    name: name,
+                    email: email,
+                    createdAt: serverTimestamp(),
+                    isBusiness: false // Default to regular user
+                });
+
+                showSuccess('Account created successfully! Welcome to Detroit Pak Connect!');
+                
+            } catch (error) {
+                showError('Error creating account: ' + error.message);
+            }
+        });
+
+        // 🔐 SIGN IN EXISTING USER
+        loginFormElement.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showSuccess('Welcome back!');
+            } catch (error) {
+                showError('Login failed: ' + error.message);
+            }
+        });
+
+        // 🚪 LOGOUT USER
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                showSuccess('Logged out successfully!');
+            } catch (error) {
+                showError('Error logging out: ' + error.message);
+            }
+        });
+
+        // 👤 MONITOR USER AUTHENTICATION STATE
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is signed in
+                loginForm.style.display = 'none';
+                signupForm.style.display = 'none';
+                userDashboard.style.display = 'block';
+                document.getElementById('userEmail').textContent = user.email;
+            } else {
+                // User is signed out
+                loginForm.style.display = 'block';
+                signupForm.style.display = 'none';
+                userDashboard.style.display = 'none';
+            }
+        });
+
+        // 💬 HELPER FUNCTIONS FOR MESSAGES
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+        }
+
+        function clearMessages() {
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
